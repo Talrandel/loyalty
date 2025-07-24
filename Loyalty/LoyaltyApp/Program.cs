@@ -7,6 +7,7 @@ using LoyaltyApp.Models;
 using LoyaltyApp.Pages;
 using LoyaltyApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -44,11 +45,6 @@ services.AddAuthorization(options =>
     options.AddPolicy("RequireEmployee", p => p.RequireRole(Role.Employee.ToString(), Role.Admin.ToString()));
 });
 
-services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
-services.AddScoped<IUserService, UserService>();
-services.AddScoped<ICustomerService, CustomerService>();
-services.AddScoped<IActionEntryService, ActionEntryService>();
-
 services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -56,8 +52,14 @@ services.AddAuthorizationCore();
 services.AddRazorPages();
 services.AddServerSideBlazor();
 services.AddBlazoredLocalStorage();
-
 services.AddHttpClient();
+
+services.AddScoped<JwtAuthenticationStateProvider>();
+services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthenticationStateProvider>());
+services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+services.AddScoped<IUserService, UserService>();
+services.AddScoped<ICustomerService, CustomerService>();
+services.AddScoped<IActionEntryService, ActionEntryService>();
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -108,14 +110,12 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
 app.UseStaticFiles();
+// app.MapStaticAssets();
+// app.MapRazorComponents<App>()
+//     .AddInteractiveServerRenderMode();
 app.UseRouting();
+// app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapBlazorHub();

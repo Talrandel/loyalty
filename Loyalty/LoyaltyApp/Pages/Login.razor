@@ -1,0 +1,74 @@
+@page "/login"
+@using System.Text.Json
+@using LoyaltyApp.Services
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject JwtAuthenticationStateProvider Auth
+@inject Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage.ProtectedLocalStorage ProtectedStorage
+
+<h3>Вход</h3>
+
+@if (!string.IsNullOrWhiteSpace(logoutReason))
+{
+    <div class="alert alert-warning">@logoutReason</div>
+}
+
+<EditForm Model="model" OnValidSubmit="HandleLogin">
+    <InputText @bind-Value="model.Login" placeholder="Логин" class="form-control mb-2" />
+    <InputText @bind-Value="model.Password" placeholder="Пароль" type="password" class="form-control mb-2" />
+    <button class="btn btn-primary">Войти</button>
+</EditForm>
+
+@if (error is not null)
+{
+    <p class="text-danger">@error</p>
+}
+
+@code {
+    private bool initialized;
+    private LoginDto model = new();
+    private string error;
+    private string logoutReason;
+
+    private record LoginDto
+    {
+        public string Login { get; set; } = "";
+        public string UserName { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || initialized)
+            return;
+
+        initialized = true;
+
+        var result = await ProtectedStorage.GetAsync<string>("authLogoutReason");
+        if (result.Success)
+        {
+            logoutReason = result.Value;
+            await ProtectedStorage.DeleteAsync("authLogoutReason");
+        }
+
+        StateHasChanged();
+    }
+
+    async Task HandleLogin()
+    {
+        error = null;
+        var uri = Nav.BaseUri.TrimEnd('/') + "/api/auth/login";
+        var resp = await Http.PostAsJsonAsync(uri, model);
+        if (!resp.IsSuccessStatusCode)
+        {
+            error = "Неверные учётные данные";
+            return;
+        }
+
+        var json  = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var token = json.GetProperty("token").GetString();
+
+        await Auth.SetTokenAsync(token);
+        Nav.NavigateTo("/");
+    }
+}

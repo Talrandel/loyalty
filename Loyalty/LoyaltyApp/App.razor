@@ -1,8 +1,8 @@
-﻿@using LoyaltyApp.Pages
+﻿@using LoyaltyApp.Shared
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
                     <RedirectToLogin />
                 </NotAuthorized>
@@ -11,7 +11,7 @@
         </Found>
         <NotFound>
             <PageTitle>Not found</PageTitle>
-            <LayoutView Layout="@typeof(Layout.MainLayout)">
+            <LayoutView Layout="@typeof(MainLayout)">
                 <p role="alert">Страница не найдена.</p>
             </LayoutView>
         </NotFound>

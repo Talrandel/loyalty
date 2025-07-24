@@ -1,0 +1,31 @@
+.page {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 220px;
+    background: #f8f9fa;
+    padding-top: 1rem;
+    min-height: 100vh;
+    border-right: 1px solid #dee2e6;
+    position: relative;
+    z-index: 10;
+}
+
+main {
+    flex: 1;
+    background: #fff;
+    min-height: 100vh;
+}
+
+.top-row {
+    min-height: 60px;
+    border-bottom: 1px solid #dee2e6;
+    background: #fff;
+}
+
+.content {
+    padding: 2rem 1rem 1rem 1rem;
+}
+

@@ -1,0 +1,71 @@
+﻿@using System.Security.Claims
+@using LoyaltyApp.Services
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject JwtAuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Меню</PageTitle>
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4 auth-bar d-flex justify-content-end align-items-center">
+            <AuthorizeView Context="authState">
+                <Authorized>
+                    <span class="me-2">@authState.User.Identity.Name</span>
+                    <button class="btn btn-link" @onclick="Logout">Выйти</button>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink class="btn btn-link" href="/login">Войти</NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            <ErrorBoundary>
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <div class="alert alert-danger mt-4 text-center" style="font-size: 1.2rem;">
+                        <span class="oi oi-warning" style="font-size: 2rem;"></span><br/>
+                        <strong>Произошла непредвиденная ошибка приложения.</strong>
+                        <br />
+                        Пожалуйста, <a href="javascript:location.reload()">перезагрузите страницу</a> или обратитесь к администратору.
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
+        </article>
+    </main>
+</div>
+
+@code {
+    private bool initialized;
+    private int userId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || initialized)
+            return;
+
+        initialized = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out userId))
+        {
+            return;
+        }
+
+        StateHasChanged();
+    }
+    
+    private async Task Logout()
+    {
+        await AuthStateProvider.SetTokenAsync(null);
+        Nav.NavigateTo("login", true);
+    }
+}

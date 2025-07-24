@@ -1,0 +1,36 @@
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+<AuthorizeView>
+    <Authorized>
+        <!-- Пользователь авторизован — ничего не делаем -->
+    </Authorized>
+    <NotAuthorized>
+        @if (!_checked)
+        {
+            <p>Проверка авторизации...</p>
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private bool _checked = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _checked)
+            return;
+
+        _checked = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Nav.NavigateTo("/login", true);
+        }
+
+        StateHasChanged();
+    }
+}

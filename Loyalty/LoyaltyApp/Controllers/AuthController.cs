@@ -57,7 +57,8 @@ public sealed class AuthController : ControllerBase
     {
         try
         {
-            await _userService.CreateAsync(dto.Login, dto.UserName, dto.Password);
+            // TODO: actingUserId == 0
+            await _userService.CreateAsync(0, dto.Login, dto.UserName, dto.Password);
             return Ok();
         }
         catch (InvalidOperationException ex)

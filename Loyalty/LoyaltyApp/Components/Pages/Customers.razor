@@ -1,5 +1,240 @@
-<h3>Customers</h3>
+@page "/customers"
+@using System.Security.Claims
+@using System.Security.Cryptography
+@using System.Text
+@using LoyaltyApp.Models
+@using LoyaltyApp.Services
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ICustomerService CustomerService
+
+<h3>Клиенты</h3>
+<button class="add-btn" @onclick="ShowAddModal">Добавить клиента</button>
+
+<input @bind="searchQuery" placeholder="Поиск по последним 4 цифрам телефона..." class="search-box" />
+
+@if (FilteredCustomers == null)
+{
+    <p>Загрузка...</p>
+}
+else if (!FilteredCustomers.Any())
+{
+    <p>Клиентов пока нет.</p>
+}
+else
+{
+    <div class="customer-list">
+        @foreach (var customer in FilteredCustomers)
+        {
+            <div class="customer-item">
+                <div><strong>@customer.Name</strong></div>
+                <div>Телефон: 8-***-***-@customer.PhoneLastFourDigits</div>
+                <div>Баланс: @customer.Balance.ToString("C0")</div>
+                <div class="created-at">Зарегистрирован: @customer.CreatedAt.ToString("dd.MM.yyyy")</div>
+                <div class="actions">
+                    <button @onclick="() => ShowBalanceModal(customer, true)">Начислить</button>
+                    <button @onclick="() => ShowBalanceModal(customer, false)">Списать</button>
+                    <button class="details-btn" @onclick="() => OpenCustomerPage(customer.Id)">Подробнее</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Модальное окно для добавления клиента -->
+@if (addModalOpen)
+{
+    <div class="modal-backdrop">
+        <div class="modal">
+            <h4>Добавить клиента</h4>
+            <input @bind="newCustomerName" placeholder="Имя" />
+            <input @bind="newCustomerPhone" placeholder="Телефон (например, 88005553535)" maxlength="20" />
+            @if (!string.IsNullOrEmpty(addError))
+            {
+                <div class="error">@addError</div>
+            }
+            <div class="modal-actions">
+                <button @onclick="AddCustomer">Добавить</button>
+                <button @onclick="CloseAddModal">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Модальное окно для баланса -->
+@if (balanceModalOpen && selectedCustomer != null)
+{
+    <div class="modal-backdrop">
+        <div class="modal">
+            <h4>@(balanceIsDeposit ? "Начислить бонусы" : "Списать бонусы") клиенту @selectedCustomer.Name</h4>
+            <input type="number" @bind="balanceAmount" min="1" placeholder="Сумма" />
+            @if (!string.IsNullOrEmpty(balanceError))
+            {
+                <div class="error">@balanceError</div>
+            }
+            <div class="modal-actions">
+                <button @onclick="ApplyBalanceChange">Ок</button>
+                <button @onclick="CloseBalanceModal">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
+    private List<Customer> customers;
+    private bool initialized;
+    private int userId;
+    private string searchQuery = string.Empty;
+
+    // Быстрые действия с балансом
+    private bool balanceModalOpen = false;
+    private Customer selectedCustomer;
+    private bool balanceIsDeposit;
+    private decimal balanceAmount;
+    private string balanceError = string.Empty;
+
+    // Добавление клиента
+    private bool addModalOpen = false;
+    private string newCustomerName = string.Empty;
+    private string newCustomerPhone = string.Empty;
+    private string addError = string.Empty;
+
+    private IEnumerable<Customer> FilteredCustomers 
+        => string.IsNullOrWhiteSpace(searchQuery)
+        ? customers ?? []
+        : (customers ?? []).Where(c => c.PhoneLastFourDigits.Contains(searchQuery));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || initialized)
+            return;
+
+        initialized = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out userId))
+        {
+            return;
+        }
+
+        await InitializePageAsync();
+
+        StateHasChanged();
+    }
+
+    private async Task InitializePageAsync()
+    {
+        customers = await CustomerService.GetCustomers();
+    }
+
+    // Модалка баланса
+    void ShowBalanceModal(Customer customer, bool isDeposit)
+    {
+        selectedCustomer = customer;
+        balanceIsDeposit = isDeposit;
+        balanceAmount = 0;
+        balanceError = string.Empty;
+        balanceModalOpen = true;
+    }
+
+    void CloseBalanceModal()
+    {
+        balanceModalOpen = false;
+        balanceAmount = 0;
+        balanceError = string.Empty;
+        selectedCustomer = null;
+    }
     
+    private async Task ApplyBalanceChange()
+    {
+        balanceError = string.Empty;
+        if (balanceAmount <= 0)
+        {
+            balanceError = "Введите сумму больше нуля.";
+            return;
+        }
+        if (!balanceIsDeposit && balanceAmount > (selectedCustomer?.Balance ?? 0))
+        {
+            balanceError = "Нельзя списать больше, чем есть на балансе.";
+            return;
+        }
+        
+        if (selectedCustomer != null)
+        {
+            if (balanceIsDeposit)
+            {
+                await CustomerService.IncreaseBalance(userId, selectedCustomer, balanceAmount);
+            }
+            else
+            {
+                await CustomerService.WithdrawBalance(userId, selectedCustomer, balanceAmount);
+            }
+        }
+        CloseBalanceModal();
+        StateHasChanged();
+    }
+
+    // Добавление клиента
+    private void ShowAddModal()
+    {
+        addModalOpen = true;
+        newCustomerName = string.Empty;
+        newCustomerPhone = string.Empty;
+        addError = string.Empty;
+    }
+    
+    private void CloseAddModal()
+    {
+        addModalOpen = false;
+        newCustomerName = string.Empty;
+        newCustomerPhone = string.Empty;
+        addError = string.Empty;
+    }
+    
+    private async Task AddCustomer()
+    {
+        addError = string.Empty;
+        if (string.IsNullOrWhiteSpace(newCustomerName) || string.IsNullOrWhiteSpace(newCustomerPhone))
+        {
+            addError = "Заполните все поля!";
+            return;
+        }
+        var digits = new string(newCustomerPhone.Where(char.IsDigit).ToArray());
+        if (digits.Length < 11) // 88005553535
+        {
+            addError = "Некорректный номер телефона.";
+            return;
+        }
+        var phoneHash = GetPhoneHash(digits);
+        var lastFour = digits[^4..];
+        var customer = new Customer
+        {
+            Id = (customers?.Max(c => c.Id) ?? 0) + 1,
+            Name = newCustomerName,
+            PhoneLastFourDigits = lastFour,
+            PhoneHashed = phoneHash,
+            Balance = 0,
+            CreatedAt = DateTime.Now
+        };
+        CloseAddModal();
+        StateHasChanged();
+
+        await CustomerService.CreateAsync(userId, customer);
+        await InitializePageAsync();
+    }
+    
+    // Метод хэширования (SHA256)
+    private string GetPhoneHash(string phoneDigits)
+    {
+        using var sha = SHA256.Create();
+        var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(phoneDigits));
+        return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
+    }
+
+    // Навигация к детальной странице
+    void OpenCustomerPage(int customerId)
+    {
+        NavigationManager.NavigateTo($"/customer/{customerId}");
+    }
 }

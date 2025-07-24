@@ -2,10 +2,10 @@ using System.Globalization;
 using System.Text;
 using Blazored.LocalStorage;
 using LoyaltyApp;
-using LoyaltyApp.Components;
 using LoyaltyApp.Db;
 using LoyaltyApp.Models;
 using LoyaltyApp.Pages;
+using LoyaltyApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +43,11 @@ services.AddAuthorization(options =>
     options.AddPolicy("RequireAdmin", p => p.RequireRole(Role.Admin.ToString()));
     options.AddPolicy("RequireEmployee", p => p.RequireRole(Role.Employee.ToString(), Role.Admin.ToString()));
 });
+
+services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+services.AddScoped<IUserService, UserService>();
+services.AddScoped<ICustomerService, CustomerService>();
+services.AddScoped<IActionEntryService, ActionEntryService>();
 
 services
     .AddRazorComponents()

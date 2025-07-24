@@ -1,5 +1,236 @@
-<h3>CustomerCurrent</h3>
+@page "/customer/{CustomerId:int}"
+@using System.Security.Claims
+@using LoyaltyApp.Models
+@using LoyaltyApp.Services
+@inject NavigationManager NavigationManager
+@inject IActionEntryService ActionEntryService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ICustomerService CustomerService
+
+@if (customer == null)
+{
+    <p>Загрузка клиента...</p>
+}
+else
+{
+    <div class="customer-details">
+        <div><strong>Имя:</strong> @customer.Name</div>
+        <div><strong>Телефон:</strong> 8-***-***-@customer.PhoneLastFourDigits</div>
+        <div><strong>Баланс:</strong> @customer.Balance.ToString("C0")</div>
+        <div><strong>Дата регистрации:</strong> @customer.CreatedAt.ToString("dd.MM.yyyy")</div>
+        <div class="actions">
+            <button @onclick="() => ShowBalanceModal(true)">Начислить</button>
+            <button @onclick="() => ShowBalanceModal(false)">Списать</button>
+            <button @onclick="ShowEditModal">Изменить данные</button>
+            <button @onclick="GoBack">Назад</button>
+        </div>
+        <h4>История действий</h4>
+        @if (customerActions.Count == 0)
+        {
+            <p>Нет истории по клиенту.</p>
+        }
+        else
+        {
+            <ul class="actions-log">
+                @foreach(var entry in customerActions)
+                {
+                    <li>
+                        @entry.Date.ToString("dd.MM.yyyy HH:mm") —
+                        @ActionTypeToString(entry.ActionType, entry.Amount)
+                        (Пользователь: @entry.User.UserName)
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@if (balanceModalOpen)
+{
+    <div class="modal-backdrop">
+        <div class="modal">
+            <h4>@(balanceIsDeposit ? "Начислить бонусы" : "Списать бонусы")</h4>
+            <input type="number" @bind="balanceAmount" min="1" placeholder="Сумма" />
+            @if (!string.IsNullOrEmpty(balanceError))
+            {
+                <div class="error">@balanceError</div>
+            }
+            <div class="modal-actions">
+                <button @onclick="ApplyBalanceChange">Ок</button>
+                <button @onclick="CloseBalanceModal">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (editModalOpen)
+{
+    <div class="modal-backdrop">
+        <div class="modal">
+            <h4>Редактировать клиента</h4>
+            <input @bind="editName" placeholder="Имя" />
+            <input @bind="editPhone" placeholder="Телефон (например, 89998887766)" maxlength="20" />
+            @if (!string.IsNullOrEmpty(editError))
+            {
+                <div class="error">@editError</div>
+            }
+            <div class="modal-actions">
+                <button @onclick="ApplyEdit">Сохранить</button>
+                <button @onclick="CloseEditModal">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
+    [Parameter]
+    public int CustomerId { get; set; }
+
+    private List<ActionEntry> customerActions = new();
+    private Customer customer;
+    private bool initialized;
+    private int userId;
+
+    // Модалка баланса
+    private bool balanceModalOpen;
+    private bool balanceIsDeposit;
+    private decimal balanceAmount;
+    private string balanceError = "";
+
+    // Модалка редактирования
+    private bool editModalOpen;
+    private string editName = "";
+    private string editPhone = "";
+    private string editError = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || initialized)
+            return;
+
+        initialized = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out userId))
+        {
+            return;
+        }
+
+        await InitializePageAsync();
+
+        StateHasChanged();
+    }
     
+    private async Task InitializePageAsync()
+    {
+        customerActions = await ActionEntryService.GetByCustomerAsync(CustomerId);
+    }
+    
+    // Баланс
+    void ShowBalanceModal(bool isDeposit)
+    {
+        balanceIsDeposit = isDeposit;
+        balanceAmount = 0;
+        balanceError = "";
+        balanceModalOpen = true;
+    }
+    void CloseBalanceModal() => balanceModalOpen = false;
+
+    async Task ApplyBalanceChange()
+    {
+        balanceError = "";
+        if (balanceAmount <= 0)
+        {
+            balanceError = "Введите сумму больше нуля.";
+            return;
+        }
+        if (!balanceIsDeposit && balanceAmount > (customer?.Balance ?? 0))
+        {
+            balanceError = "Нельзя списать больше, чем есть на балансе.";
+            return;
+        }
+        
+        if (customer != null)
+        {
+            if (balanceIsDeposit)
+                await CustomerService.IncreaseBalance(userId, customer, balanceAmount);
+            else
+                await CustomerService.WithdrawBalance(userId, customer, balanceAmount);
+
+            customer = await CustomerService.GetCustomer(CustomerId);
+            customerActions = await ActionEntryService.GetByCustomerAsync(CustomerId);
+        }
+        CloseBalanceModal();
+        StateHasChanged();
+    }
+
+    // Редактирование клиента
+    void ShowEditModal()
+    {
+        if (customer == null) return;
+        editModalOpen = true;
+        editName = customer.Name;
+        editPhone = "";
+        editError = "";
+    }
+    
+    void CloseEditModal() => editModalOpen = false;
+
+    async Task ApplyEdit()
+    {
+        editError = "";
+        if (string.IsNullOrWhiteSpace(editName) || string.IsNullOrWhiteSpace(editPhone))
+        {
+            editError = "Заполните все поля!";
+            return;
+        }
+        var digits = new string(editPhone.Where(char.IsDigit).ToArray());
+        if (digits.Length < 11)
+        {
+            editError = "Некорректный номер телефона.";
+            return;
+        }
+        var lastFour = digits.Substring(digits.Length - 4);
+
+        // Хэширование
+        var phoneHashed = GetPhoneHash(digits);
+
+        if (customer != null)
+        {
+            customer.Name = editName;
+            customer.PhoneLastFourDigits = lastFour;
+            customer.PhoneHashed = phoneHashed;
+
+            await CustomerService.EditAsync(userId, customer);
+
+            customer = await CustomerService.GetCustomer(CustomerId);
+            customerActions = await ActionEntryService.GetByCustomerAsync(CustomerId);
+        }
+        CloseEditModal();
+        StateHasChanged();
+    }
+
+    void GoBack() => NavigationManager.NavigateTo("/customers");
+
+    private string GetPhoneHash(string phoneDigits)
+    {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(phoneDigits));
+        return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
+    }
+    
+    private static string ActionTypeToString(ActionType type, decimal? amount = null)
+    {
+        return type switch
+        {
+            ActionType.CreateUser => "Пользователь зарегистрирован",
+            ActionType.ChangeUserRole => "Роль пользователя изменена",
+            ActionType.CreateCustomer => "Клиент зарегистрирован",
+            ActionType.EditCustomer => "Данные клиента изменены",
+            ActionType.IncreaseBalance => $"Начислено {amount?.ToString("N2") ?? "0"} руб.",
+            ActionType.WithdrawBalance => $"Списано {amount?.ToString("N2") ?? "0"} руб.",
+            _ => "Неизвестное действие"
+        };
+    }
 }

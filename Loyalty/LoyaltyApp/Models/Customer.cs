@@ -8,4 +8,5 @@ public sealed class Customer
     public string PhoneLastFourDigits { get; set; }
     public string PhoneHashed { get; set; }
     public decimal Balance { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

@@ -1,5 +1,157 @@
-<h3>AdminPanel</h3>
+@page "/adminpanel"
+@attribute [Authorize(Roles = "Admin")]
+
+@using System.Security.Claims
+@using LoyaltyApp.Services
+@using LoyaltyApp.Models
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h3>Администрирование пользователей</h3>
+
+<button class="btn btn-primary mb-3" @onclick="ShowCreateModal">
+    <span class="oi oi-plus"></span> Новый сотрудник
+</button>
+
+<br />
+
+<UserList Users="allUsers"
+          CanEditRole="true"
+          Roles="@allRoles"
+          OnRoleChange="OnUserRoleChange" />
+
+@if (showCreateModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color:rgba(0,0,0,0.3);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить сотрудника</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
+                </div>
+                <div class="modal-body">
+                    <label>Логин (для входа)</label>
+                    <input class="form-control mb-2" @bind="newLogin" maxlength="32" />
+                    <label>ФИО</label>
+                    <input class="form-control mb-2" @bind="newFullName" maxlength="100" />
+                    @if (!string.IsNullOrWhiteSpace(createError))
+                    {
+                        <div class="text-danger">@createError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="HideCreateModal">Отмена</button>
+                    <button class="btn btn-primary" @onclick="CreateUserAsync">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(generatedPassword))
+{
+    <div class="alert alert-success mt-2">
+        Пользователь <strong>@lastCreatedUserFullName</strong> создан.<br />
+        Логин: <strong>@lastCreatedUserLogin</strong><br />
+        Временный пароль: <strong>@generatedPassword</strong>
+    </div>
+}
 
 @code {
+    private bool initialized;
+    private int userId;
+    private string newLogin = "";
+    private string newFullName = "";
+    private string createError;
+    private string generatedPassword;
+    private string lastCreatedUserFullName;
+    private string lastCreatedUserLogin;
+    private bool showCreateModal = false;
+
+    private List<User> allUsers = new();
+    private List<Role> allRoles = new() { Role.Admin, Role.Employee };
     
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || initialized)
+            return;
+
+        initialized = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out userId))
+        {
+            return;
+        }
+
+        await InitializePageAsync();
+
+        StateHasChanged();
+    }
+
+    private async Task InitializePageAsync()
+    {
+        allUsers = await UserService.GetUsersAsync();
+    }
+
+    private void ShowCreateModal()
+    {
+        newLogin = "";
+        newFullName = "";
+        createError = null;
+        showCreateModal = true;
+    }
+
+    private async Task OnUserRoleChange((User user, Role newRole) param)
+    {
+        if (param.user.Role != param.newRole)
+        {
+            param.user.Role = param.newRole;
+            await UserService.UpdateUserAsync(userId, param.user);
+            StateHasChanged();
+        }
+    }
+
+    private void HideCreateModal() => showCreateModal = false;
+
+    private async Task CreateUserAsync()
+    {
+        createError = null;
+        generatedPassword = null;
+        lastCreatedUserFullName = null;
+        lastCreatedUserLogin = null;
+
+        var login = newLogin.Trim();
+        var fullName = newFullName.Trim();
+
+        if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(fullName))
+        {
+            createError = "Заполните все поля.";
+            return;
+        }
+
+        if (allUsers.Any(u => u.Login.Equals(login, StringComparison.OrdinalIgnoreCase)))
+        {
+            createError = "Пользователь с таким логином уже существует.";
+            return;
+        }
+
+        var rnd = new Random();
+        var password = string.Concat(Enumerable.Range(0, 6).Select(_ => rnd.Next(0, 10)));
+
+        try
+        {
+            var newUser = await UserService.CreateAsync(userId, login, fullName, password);
+            generatedPassword = password;
+            lastCreatedUserFullName = fullName;
+            lastCreatedUserLogin = login;
+            showCreateModal = false;
+            await InitializePageAsync();
+        }
+        catch (Exception ex)
+        {
+            createError = "Ошибка при создании пользователя: " + ex.Message;
+        }
+    }
 }

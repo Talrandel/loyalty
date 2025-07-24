@@ -1,0 +1,83 @@
+@using LoyaltyApp.Extensions
+@using LoyaltyApp.Models
+
+<div class="list-group">
+    @if (Users is not null)
+    {
+        @foreach (var user in Users)
+        {
+            <div class="list-group-item d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <span class="oi oi-person bg-secondary rounded-circle d-inline-flex justify-content-center align-items-center text-white me-3"
+                          style="width:50px; height:50px; font-size:2rem;"></span>
+                    <div>
+                        <div><strong>@GetUserName(user)</strong></div>
+                        <div>
+                            @if (CanEditRole)
+                            {
+                                <select class="form-select form-select-sm w-auto d-inline"
+                                        @bind="user.Role"
+                                        @bind:after="() => OnRoleChange.InvokeAsync((user, user.Role))">
+                                    @foreach (var role in Roles)
+                                    {
+                                        <option value="@role">@role.GetEnumDisplayName()</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <span class="text-muted">@GetUserRole(user)</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<User> Users { get; set; }
+
+    [Parameter]
+    public EventCallback<User> OnActionClick { get; set; }
+
+    [Parameter]
+    public bool ShowAction { get; set; }
+
+    [Parameter]
+    public bool CanEditRole { get; set; }
+
+    [Parameter] 
+    public EventCallback<(User user, Role newRole)> OnRoleChange { get; set; }
+
+    [Parameter]
+    public List<Role> Roles { get; set; } = new() { Role.Admin, Role.Employee };
+
+    private async Task OnRoleChanged(ChangeEventArgs e, User user)
+    {
+        if (Enum.TryParse<Role>(e.Value?.ToString(), out var newRole))
+        {
+            if (OnRoleChange.HasDelegate)
+            {
+                await OnRoleChange.InvokeAsync((user, newRole));
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            // Можно обработать ошибку парсинга
+        }
+    }
+
+    private string GetUserName(User user)
+    {
+        return user.UserName;
+    }
+
+    private string GetUserRole(User user)
+    {
+        return user.Role.GetEnumDisplayName();
+    }
+}

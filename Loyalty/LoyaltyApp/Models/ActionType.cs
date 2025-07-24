@@ -2,10 +2,13 @@ namespace LoyaltyApp.Models;
 
 public enum ActionType
 {
+    Login,
     CreateUser,
-    ChageUserRole,
+    ChangeUserRole,
+    DeleteUser,
     CreateCustomer,
     EditCustomer,
+    DeleteCustomer,
     IncreaseBalance,
     WithdrawBalance,
 }

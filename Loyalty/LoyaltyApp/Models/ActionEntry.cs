@@ -15,9 +15,9 @@ public sealed class ActionEntry
     /// <summary>
     /// Кто совершил действие.
     /// </summary>
-    public int? CustomerId { get; set; }        
+    public int? CustomerId { get; set; }
     public Customer Customer { get; set; }
-    
+
     /// <summary>
     /// Для Increase/Withdraw.
     /// </summary>

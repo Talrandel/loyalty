@@ -7,18 +7,18 @@ namespace LoyaltyApp.Services;
 internal sealed class CustomerService : ICustomerService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
-    
+
     public CustomerService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
         _dbFactory = dbFactory;
     }
-    
+
     public async Task CreateAsync(int actingUserId, Customer customer)
     {
         await using var dbContext = await _dbFactory.CreateDbContextAsync();
         customer.CreatedAt = DateTime.UtcNow;
         dbContext.Customers.Add(customer);
-        
+
         await dbContext.SaveChangesAsync();
 
         dbContext.ActionEntries.Add(new ActionEntry
@@ -29,7 +29,7 @@ internal sealed class CustomerService : ICustomerService
             Date = DateTime.UtcNow,
             Description = "Клиент зарегистрирован"
         });
-        
+
         await dbContext.SaveChangesAsync();
     }
 
@@ -40,7 +40,7 @@ internal sealed class CustomerService : ICustomerService
         if (entity != null)
         {
             entity.Balance += amount;
-        
+
             dbContext.ActionEntries.Add(new ActionEntry
             {
                 ActionType = ActionType.IncreaseBalance,
@@ -50,7 +50,7 @@ internal sealed class CustomerService : ICustomerService
                 Date = DateTime.UtcNow,
                 Description = $"Начислено {amount} руб."
             });
-            
+
             await dbContext.SaveChangesAsync();
         }
     }
@@ -62,7 +62,7 @@ internal sealed class CustomerService : ICustomerService
         if (entity != null && entity.Balance >= amount)
         {
             entity.Balance -= amount;
-            
+
             dbContext.ActionEntries.Add(new ActionEntry
             {
                 ActionType = ActionType.WithdrawBalance,
@@ -72,7 +72,7 @@ internal sealed class CustomerService : ICustomerService
                 Date = DateTime.UtcNow,
                 Description = $"Списано {amount} руб."
             });
-            
+
             await dbContext.SaveChangesAsync();
         }
     }
@@ -93,7 +93,7 @@ internal sealed class CustomerService : ICustomerService
                 Date = DateTime.UtcNow,
                 Description = $"Клиент изменён"
             });
-            
+
             await dbContext.SaveChangesAsync();
         }
     }

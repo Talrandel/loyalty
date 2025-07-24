@@ -48,7 +48,7 @@ public sealed class JwtAuthenticationStateProvider : AuthenticationStateProvider
                     JwtToken = result.Value;
                 }
             }
-            catch(CryptographicException)
+            catch (CryptographicException)
             {
                 await _storage.DeleteAsync("authToken");
             }
@@ -64,7 +64,7 @@ public sealed class JwtAuthenticationStateProvider : AuthenticationStateProvider
         {
             return new AuthenticationState(new ClaimsPrincipal());
         }
-        
+
         string logoutReason = null;
 
         try

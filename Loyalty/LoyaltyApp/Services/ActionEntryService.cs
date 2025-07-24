@@ -7,7 +7,7 @@ namespace LoyaltyApp.Services;
 public sealed class ActionEntryService : IActionEntryService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
-    
+
     public ActionEntryService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
         _dbFactory = dbFactory;

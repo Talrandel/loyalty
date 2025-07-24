@@ -6,7 +6,7 @@ public enum Role
 {
     [Display(Name = "Сотрудник")]
     Employee,
-    
+
     [Display(Name = "Администратор")]
     Admin
 }

@@ -17,7 +17,7 @@ internal sealed class UserService : IUserService
         _hasher = hasher;
         _dbFactory = dbFactory;
     }
-    
+
     public User Validate(string login, string password)
     {
         using var dbContext = _dbFactory.CreateDbContext();
@@ -67,7 +67,7 @@ internal sealed class UserService : IUserService
             var oldRole = entity.Role;
             entity.Role = user.Role;
             await dbContext.SaveChangesAsync();
-            
+
             dbContext.ActionEntries.Add(new ActionEntry
             {
                 ActionType = ActionType.ChangeUserRole,

@@ -1,4 +1,5 @@
 @page "/customers"
+@attribute [Authorize(Roles = "Employee, Admin")]
 @using System.Security.Claims
 @using System.Security.Cryptography
 @using System.Text
@@ -8,8 +9,8 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ICustomerService CustomerService
 
-<h3>Клиенты</h3>
-<button class="add-btn" @onclick="ShowAddModal">Добавить клиента</button>
+<h1>Клиенты</h1>
+<button class="add-btn button-primary" @onclick="ShowAddModal">Добавить клиента</button>
 
 <input @bind="searchQuery" placeholder="Поиск по последним 4 цифрам телефона..." class="search-box" />
 
@@ -32,9 +33,9 @@ else
                 <div>Баланс: @customer.Balance.ToString("C0")</div>
                 <div class="created-at">Зарегистрирован: @customer.CreatedAt.ToString("dd.MM.yyyy")</div>
                 <div class="actions">
-                    <button @onclick="() => ShowBalanceModal(customer, true)">Начислить</button>
-                    <button @onclick="() => ShowBalanceModal(customer, false)">Списать</button>
-                    <button class="details-btn" @onclick="() => OpenCustomerPage(customer.Id)">Подробнее</button>
+                    <button class="button-secondary" @onclick="() => ShowBalanceModal(customer, true)">Начислить</button>
+                    <button class="button-secondary" @onclick="() => ShowBalanceModal(customer, false)">Списать</button>
+                    <button class="details-btn button-third" @onclick="() => OpenCustomerPage(customer.Id)">Подробнее</button>
                 </div>
             </div>
         }
@@ -45,17 +46,21 @@ else
 @if (addModalOpen)
 {
     <div class="modal-backdrop">
-        <div class="modal">
-            <h4>Добавить клиента</h4>
-            <input @bind="newCustomerName" placeholder="Имя" />
-            <input @bind="newCustomerPhone" placeholder="Телефон (например, 88005553535)" maxlength="20" />
+        <div class="custom-modal">
+            <h1>Добавить клиента</h1>
+            <br/>
+            <div class="custom-modal-fields">
+                <input class="modal-input" @bind="newCustomerName" placeholder="Имя" />
+                <input class="modal-input" @bind="newCustomerPhone" placeholder="Телефон (например, 88005553535)" maxlength="20" />
+            </div> 
             @if (!string.IsNullOrEmpty(addError))
             {
-                <div class="error">@addError</div>
+                <div class="error-message">@addError</div>
             }
-            <div class="modal-actions">
-                <button @onclick="AddCustomer">Добавить</button>
-                <button @onclick="CloseAddModal">Отмена</button>
+            <br/>
+            <div class="custom-modal-actions">
+                <button class="modal-btn button-primary" @onclick="AddCustomer">Добавить</button>
+                <button class="modal-btn" @onclick="CloseAddModal">Отмена</button>
             </div>
         </div>
     </div>
@@ -65,16 +70,17 @@ else
 @if (balanceModalOpen && selectedCustomer != null)
 {
     <div class="modal-backdrop">
-        <div class="modal">
-            <h4>@(balanceIsDeposit ? "Начислить бонусы" : "Списать бонусы") клиенту @selectedCustomer.Name</h4>
-            <input type="number" @bind="balanceAmount" min="1" placeholder="Сумма" />
+        <div class="custom-modal">
+            <h1>@(balanceIsDeposit ? "Начислить бонусы" : "Списать бонусы")</h1>
+            <h2> клиенту @selectedCustomer.PhoneLastFourDigits</h2>
+            <input type="number" class="modal-input" @bind="balanceAmount" min="1" placeholder="Сумма" />
             @if (!string.IsNullOrEmpty(balanceError))
             {
-                <div class="error">@balanceError</div>
+                <div class="error-message">@balanceError</div>
             }
-            <div class="modal-actions">
-                <button @onclick="ApplyBalanceChange">Ок</button>
-                <button @onclick="CloseBalanceModal">Отмена</button>
+            <div class="custom-modal-actions">
+                <button class="modal-btn button-primary" @onclick="ApplyBalanceChange">Ок</button>
+                <button class="modal-btn" @onclick="CloseBalanceModal">Отмена</button>
             </div>
         </div>
     </div>
@@ -171,6 +177,7 @@ else
                 await CustomerService.WithdrawBalance(userId, selectedCustomer, balanceAmount);
             }
         }
+        await InitializePageAsync();
         CloseBalanceModal();
         StateHasChanged();
     }
@@ -210,18 +217,27 @@ else
         var lastFour = digits[^4..];
         var customer = new Customer
         {
-            Id = (customers?.Max(c => c.Id) ?? 0) + 1,
+            Id = customers?.Any() == true
+                ? customers.Max(c => c.Id) + 1
+                : 0,
             Name = newCustomerName,
             PhoneLastFourDigits = lastFour,
             PhoneHashed = phoneHash,
             Balance = 0,
             CreatedAt = DateTime.Now
         };
-        CloseAddModal();
-        StateHasChanged();
 
-        await CustomerService.CreateAsync(userId, customer);
-        await InitializePageAsync();
+        try
+        {
+            await CustomerService.CreateAsync(userId, customer);
+            await InitializePageAsync();
+            StateHasChanged();
+            CloseAddModal();
+        }
+        catch (Exception e)
+        {
+            addError = "Данный телефонный номер уже используется в системе, введите другой номер";
+        }
     }
     
     // Метод хэширования (SHA256)

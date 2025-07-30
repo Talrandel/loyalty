@@ -17,10 +17,10 @@ var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 
@@ -39,11 +39,9 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireAdmin", p => p.RequireRole(Role.Admin.ToString()));
-    options.AddPolicy("RequireEmployee", p => p.RequireRole(Role.Employee.ToString(), Role.Admin.ToString()));
-});
+services.AddAuthorizationBuilder()
+    .AddPolicy("RequireAdmin", p => p.RequireRole(Role.Admin.ToString()))
+    .AddPolicy("RequireEmployee", p => p.RequireRole(Role.Employee.ToString(), Role.Admin.ToString()));
 
 services
     .AddRazorComponents()
@@ -83,7 +81,7 @@ using (var scope = app.Services.CreateScope())
     if (!db.Users.Any(u => u.UserName == "Андрей" && u.Role == Role.Admin))
     {
         var admin = new User { Login = "Andrew", UserName = "Андрей", Role = Role.Admin };
-        admin.PasswordHash = hasher.HashPassword(admin, "admin!@#$%");
+        admin.PasswordHash = hasher.HashPassword(admin, "111111");
         db.Users.Add(admin);
     }
 
@@ -91,13 +89,13 @@ using (var scope = app.Services.CreateScope())
     if (!db.Users.Any(u => u.UserName == "Жан" && u.Role == Role.Employee))
     {
         mgr = new User { Login = "Jan", UserName = "Жан", Role = Role.Employee };
-        mgr.PasswordHash = hasher.HashPassword(mgr, "111!!!");
+        mgr.PasswordHash = hasher.HashPassword(mgr, "111111");
         db.Users.Add(mgr);
     }
     if (!db.Users.Any(u => u.UserName == "Костя" && u.Role == Role.Employee))
     {
         mgr = new User { Login = "Kostya", UserName = "Костя", Role = Role.Employee };
-        mgr.PasswordHash = hasher.HashPassword(mgr, "222@@@");
+        mgr.PasswordHash = hasher.HashPassword(mgr, "111111");
         db.Users.Add(mgr);
     }
     db.SaveChanges();
@@ -111,11 +109,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-// app.MapStaticAssets();
-// app.MapRazorComponents<App>()
-//     .AddInteractiveServerRenderMode();
 app.UseRouting();
-// app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapBlazorHub();

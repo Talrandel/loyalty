@@ -54,7 +54,6 @@ internal sealed class UserService : IUserService
     {
         await using var dbContext = await _dbFactory.CreateDbContextAsync();
         return await dbContext.Users
-            .Where(e => e.Role != Role.Admin)
             .ToListAsync();
     }
 

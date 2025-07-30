@@ -4,10 +4,10 @@
 @inject NavigationManager Nav
 @inject JwtAuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Меню</PageTitle>
+<PageTitle>One Chef Studio</PageTitle>
 
 <div class="page">
-    <div class="sidebar">
+    <div class="custom-sidebar">
         <NavMenu />
     </div>
 
@@ -24,7 +24,7 @@
             </AuthorizeView>
         </div>
 
-        <article class="content px-4">
+        <article class="content px-4 main-content">
             <ErrorBoundary>
                 <ChildContent>
                     @Body

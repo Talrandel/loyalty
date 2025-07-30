@@ -27,7 +27,7 @@ internal sealed class CustomerService : ICustomerService
             UserId = actingUserId,
             CustomerId = customer.Id,
             Date = DateTime.UtcNow,
-            Description = "Клиент зарегистрирован"
+            Description = "Клиент зарегистрирован в системе"
         });
 
         await dbContext.SaveChangesAsync();
@@ -91,7 +91,7 @@ internal sealed class CustomerService : ICustomerService
                 UserId = actingUserId,
                 CustomerId = entity.Id,
                 Date = DateTime.UtcNow,
-                Description = $"Клиент изменён"
+                Description = "Клиент изменён"
             });
 
             await dbContext.SaveChangesAsync();

@@ -6,7 +6,7 @@
 @inject JwtAuthenticationStateProvider Auth
 @inject Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage.ProtectedLocalStorage ProtectedStorage
 
-<h3>Вход</h3>
+<h1>Вход</h1>
 
 @if (!string.IsNullOrWhiteSpace(logoutReason))
 {
@@ -16,12 +16,12 @@
 <EditForm Model="model" OnValidSubmit="HandleLogin">
     <InputText @bind-Value="model.Login" placeholder="Логин" class="form-control mb-2" />
     <InputText @bind-Value="model.Password" placeholder="Пароль" type="password" class="form-control mb-2" />
-    <button class="btn btn-primary">Войти</button>
+    <button class="button-primary">Войти</button>
 </EditForm>
 
 @if (error is not null)
 {
-    <p class="text-danger">@error</p>
+    <p class="error-message">@error</p>
 }
 
 @code {

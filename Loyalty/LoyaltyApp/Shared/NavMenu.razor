@@ -1,38 +1,44 @@
 ﻿@inject AuthenticationStateProvider AuthState
+
 <div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">LoyaltyApp</a>
+    <div class="sidebar-header">
+        <span >Система лояльности <br/> One Chef Studio </span>
     </div>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
+<div>
+    <nav class="nav-menu-large flex-column">
         <CascadingAuthenticationState>
             <AuthorizeView Roles="Employee,Admin">
-                <div class="nav-item px-3">
+                <div class="nav-item">
                     <NavLink class="nav-link" href="/customers">
-                        <span class="oi oi-people" aria-hidden="true"></span> Список клиентов
+                        <span class="oi oi-people custom-menu-icon" aria-hidden="true"></span>
+                        <span class="custom-menu-text">
+                            Список<br />клиентов
+                        </span>
+                    </NavLink>
+                </div>
+            </AuthorizeView>
+            <AuthorizeView Roles="Employee,Admin">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/journal">
+                        <span class="oi oi-spreadsheet custom-menu-icon" aria-hidden="true"></span>
+                        <span class="custom-menu-text">
+                            Журнал<br />действий
+                        </span>
                     </NavLink>
                 </div>
             </AuthorizeView>
             <AuthorizeView Roles="Admin">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="/adminpanel">
-                        <span class="oi oi-puzzle-piece" aria-hidden="true"></span> Управление
+                        <span class="oi oi-monitor custom-menu-icon" aria-hidden="true"></span>
+                        <span class="custom-menu-text">
+                            Управление
+                        </span>
                     </NavLink>
                 </div>
             </AuthorizeView>
         </CascadingAuthenticationState>
     </nav>
 </div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}

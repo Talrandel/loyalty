@@ -4,12 +4,13 @@
 @using System.Security.Claims
 @using LoyaltyApp.Services
 @using LoyaltyApp.Models
+@using LoyaltyApp.Shared
 @inject IUserService UserService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<h3>Администрирование пользователей</h3>
+<h1>Администрирование пользователей</h1>
 
-<button class="btn btn-primary mb-3" @onclick="ShowCreateModal">
+<button class="btn button-primary mb-3" @onclick="ShowCreateModal">
     <span class="oi oi-plus"></span> Новый сотрудник
 </button>
 
@@ -22,7 +23,7 @@
 
 @if (showCreateModal)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color:rgba(0,0,0,0.3);">
+    <div class="custom-modal fade show d-block" tabindex="-1" style="background-color:rgba(0,0,0,0.3);">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -40,8 +41,8 @@
                     }
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="HideCreateModal">Отмена</button>
-                    <button class="btn btn-primary" @onclick="CreateUserAsync">Создать</button>
+                    <button class="button-primary" @onclick="CreateUserAsync">Создать</button>
+                    <button class="button-secondary" @onclick="HideCreateModal">Отмена</button>
                 </div>
             </div>
         </div>

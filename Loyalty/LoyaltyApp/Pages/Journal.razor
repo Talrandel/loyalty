@@ -1,0 +1,69 @@
+@page "/journal"
+@attribute [Authorize(Roles = "Employee, Admin")]
+@using LoyaltyApp.Models
+@using LoyaltyApp.Services
+@inject IActionEntryService ActionEntryService
+
+<h1>Журнал действий</h1>
+
+@if (actions == null)
+{
+    <p>Загрузка...</p>
+}
+else if (actions.Count == 0)
+{
+    <p>Пока нет ни одного действия.</p>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th>Дата и время</th>
+            <th>Тип</th>
+            <th>Описание</th>
+            <th>Клиент</th>
+            <th>Пользователь</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var entry in actions)
+        {
+            <tr>
+                <td>@entry.Date.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>@ActionTypeToString(entry.ActionType)</td>
+                <td>@entry.Description</td>
+                <td>
+                    @(entry.Customer != null ? entry.Customer.Name : "")
+                </td>
+                <td>
+                    @(entry.User != null ? entry.User.UserName : "")
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<ActionEntry> actions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        actions = await ActionEntryService.GetAllAsync();
+    }
+
+    private static string ActionTypeToString(ActionType type)
+    {
+        return type switch
+        {
+            ActionType.CreateUser => "Пользователь создан",
+            ActionType.ChangeUserRole => "Изменение роли",
+            ActionType.CreateCustomer => "Клиент создан",
+            ActionType.EditCustomer => "Клиент изменён",
+            ActionType.IncreaseBalance => "Начисление",
+            ActionType.WithdrawBalance => "Списание",
+            _ => "Действие"
+        };
+    }
+}

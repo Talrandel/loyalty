@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltyApp", "LoyaltyApp\Lo
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{05160E0B-91C7-49BF-BF0D-99014B99AF00}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltyApp.Tests", "LoyaltyApp.Tests\LoyaltyApp.Tests.csproj", "{BD6A3321-7F4A-4E9A-8C98-14B17192DBBD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,5 +16,9 @@ Global
 		{C1A89905-1579-4A02-85C4-A226BBB8189C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1A89905-1579-4A02-85C4-A226BBB8189C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1A89905-1579-4A02-85C4-A226BBB8189C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD6A3321-7F4A-4E9A-8C98-14B17192DBBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD6A3321-7F4A-4E9A-8C98-14B17192DBBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD6A3321-7F4A-4E9A-8C98-14B17192DBBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD6A3321-7F4A-4E9A-8C98-14B17192DBBD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

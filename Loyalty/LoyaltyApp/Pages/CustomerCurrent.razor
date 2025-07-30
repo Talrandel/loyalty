@@ -1,4 +1,5 @@
 @page "/customer/{CustomerId:int}"
+@attribute [Authorize(Roles = "Employee, Admin")]
 @using System.Security.Claims
 @using LoyaltyApp.Models
 @using LoyaltyApp.Services
@@ -18,12 +19,13 @@ else
         <div><strong>Телефон:</strong> 8-***-***-@customer.PhoneLastFourDigits</div>
         <div><strong>Баланс:</strong> @customer.Balance.ToString("C0")</div>
         <div><strong>Дата регистрации:</strong> @customer.CreatedAt.ToString("dd.MM.yyyy")</div>
-        <div class="actions">
-            <button @onclick="() => ShowBalanceModal(true)">Начислить</button>
-            <button @onclick="() => ShowBalanceModal(false)">Списать</button>
-            <button @onclick="ShowEditModal">Изменить данные</button>
-            <button @onclick="GoBack">Назад</button>
+        <div class="custom-modal-actions">
+            <button class="button-primary" @onclick="() => ShowBalanceModal(true)">Начислить</button>
+            <button class="button-primary" @onclick="() => ShowBalanceModal(false)">Списать</button>
+            <button class="button-primary" @onclick="ShowEditModal">Изменить данные</button>
+            <button class="modal-btn button-third" @onclick="GoBack">Назад</button>
         </div>
+        <br/>
         <h4>История действий</h4>
         @if (customerActions.Count == 0)
         {
@@ -48,16 +50,16 @@ else
 @if (balanceModalOpen)
 {
     <div class="modal-backdrop">
-        <div class="modal">
-            <h4>@(balanceIsDeposit ? "Начислить бонусы" : "Списать бонусы")</h4>
-            <input type="number" @bind="balanceAmount" min="1" placeholder="Сумма" />
+        <div class="custom-modal">
+            <h1>@(balanceIsDeposit ? "Начислить бонусы" : "Списать бонусы")</h1>
+            <input type="number"class="modal-input"  @bind="balanceAmount" min="1" placeholder="Сумма" />
             @if (!string.IsNullOrEmpty(balanceError))
             {
-                <div class="error">@balanceError</div>
+                <div class="error-message">@balanceError</div>
             }
-            <div class="modal-actions">
-                <button @onclick="ApplyBalanceChange">Ок</button>
-                <button @onclick="CloseBalanceModal">Отмена</button>
+            <div class="custom-modal-actions">
+                <button class="modal-btn button-primary" @onclick="ApplyBalanceChange">Ок</button>
+                <button class="modal-btn" @onclick="CloseBalanceModal">Отмена</button>
             </div>
         </div>
     </div>
@@ -66,17 +68,19 @@ else
 @if (editModalOpen)
 {
     <div class="modal-backdrop">
-        <div class="modal">
-            <h4>Редактировать клиента</h4>
-            <input @bind="editName" placeholder="Имя" />
-            <input @bind="editPhone" placeholder="Телефон (например, 89998887766)" maxlength="20" />
+        <div class="custom-modal">
+            <h1>Редактировать клиента</h1>
+            <div class="custom-modal-fields">
+                <input class="modal-input" @bind="editName" placeholder="Имя" />
+                <input class="modal-input" @bind="editPhone" placeholder="Телефон (например, 88005553535)" maxlength="20" />
+            </div>
             @if (!string.IsNullOrEmpty(editError))
             {
-                <div class="error">@editError</div>
+                <div class="error-message">@editError</div>
             }
-            <div class="modal-actions">
-                <button @onclick="ApplyEdit">Сохранить</button>
-                <button @onclick="CloseEditModal">Отмена</button>
+            <div class="custom-modal-actions">
+                <button class="modal-btn button-primary" @onclick="ApplyEdit">Сохранить</button>
+                <button class="modal-btn" @onclick="CloseEditModal">Отмена</button>
             </div>
         </div>
     </div>
@@ -124,6 +128,8 @@ else
     
     private async Task InitializePageAsync()
     {
+        customer = await CustomerService.GetCustomer(CustomerId);
+        editName = customer.Name;
         customerActions = await ActionEntryService.GetByCustomerAsync(CustomerId);
     }
     
@@ -180,18 +186,22 @@ else
     async Task ApplyEdit()
     {
         editError = "";
-        if (string.IsNullOrWhiteSpace(editName) || string.IsNullOrWhiteSpace(editPhone))
+        if (string.IsNullOrWhiteSpace(editName) && string.IsNullOrWhiteSpace(editPhone))
         {
-            editError = "Заполните все поля!";
+            editError = "Заполните хотя бы одно поле!";
             return;
         }
+        
+        customer = await CustomerService.GetCustomer(CustomerId);
+        
+        
         var digits = new string(editPhone.Where(char.IsDigit).ToArray());
         if (digits.Length < 11)
         {
             editError = "Некорректный номер телефона.";
             return;
         }
-        var lastFour = digits.Substring(digits.Length - 4);
+        var lastFour = digits[^4..];
 
         // Хэширование
         var phoneHashed = GetPhoneHash(digits);

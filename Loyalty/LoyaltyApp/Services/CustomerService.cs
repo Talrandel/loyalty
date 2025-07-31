@@ -76,6 +76,7 @@ internal sealed class CustomerService : ICustomerService
             await dbContext.SaveChangesAsync();
         }
     }
+
     public async Task EditAsync(int actingUserId, Customer customer)
     {
         await using var dbContext = await _dbFactory.CreateDbContextAsync();
@@ -104,11 +105,22 @@ internal sealed class CustomerService : ICustomerService
         return await dbContext.Customers.FindAsync(id) ?? throw new NullReferenceException("Клиент не найден");
     }
 
-    public async Task<List<Customer>> GetCustomers()
+    public async Task<List<Customer>> GetCustomers(int page = 1, int pageSize = 20)
     {
         await using var dbContext = await _dbFactory.CreateDbContextAsync();
-        return await dbContext.Customers
+        var all = await dbContext.Customers.ToListAsync();
+        var c = await dbContext.Customers
             .OrderByDescending(c => c.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return c;
+    }
+
+    public async Task<int> GetCustomersCount()
+    {
+        await using var dbContext = await _dbFactory.CreateDbContextAsync();
+        return await dbContext.Customers.CountAsync();
     }
 }

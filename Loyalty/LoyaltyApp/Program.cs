@@ -16,9 +16,6 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
 
@@ -46,7 +43,7 @@ services.AddAuthorizationBuilder()
 services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
-services.AddAuthorizationCore();
+
 services.AddRazorPages();
 services.AddServerSideBlazor();
 services.AddBlazoredLocalStorage();
@@ -78,25 +75,11 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
     var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-    if (!db.Users.Any(u => u.UserName == "Андрей" && u.Role == Role.Admin))
+    if (!db.Users.Any(u => u.UserName == "admin" && u.Role == Role.Admin))
     {
-        var admin = new User { Login = "Andrew", UserName = "Андрей", Role = Role.Admin };
-        admin.PasswordHash = hasher.HashPassword(admin, "111111");
+        var admin = new User { Login = "admin", UserName = "admin", Role = Role.Admin };
+        admin.PasswordHash = hasher.HashPassword(admin, "admin");
         db.Users.Add(admin);
-    }
-
-    User mgr = null;
-    if (!db.Users.Any(u => u.UserName == "Жан" && u.Role == Role.Employee))
-    {
-        mgr = new User { Login = "Jan", UserName = "Жан", Role = Role.Employee };
-        mgr.PasswordHash = hasher.HashPassword(mgr, "111111");
-        db.Users.Add(mgr);
-    }
-    if (!db.Users.Any(u => u.UserName == "Костя" && u.Role == Role.Employee))
-    {
-        mgr = new User { Login = "Kostya", UserName = "Костя", Role = Role.Employee };
-        mgr.PasswordHash = hasher.HashPassword(mgr, "111111");
-        db.Users.Add(mgr);
     }
     db.SaveChanges();
 }

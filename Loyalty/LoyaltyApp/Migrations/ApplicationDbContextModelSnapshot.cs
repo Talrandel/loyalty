@@ -74,6 +74,11 @@ namespace LoyaltyApp.Migrations
                     b.Property<string>("PhoneLastFourDigits")
                         .HasColumnType("TEXT");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("BLOB");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PhoneHashed")

@@ -393,3 +393,26 @@ tr.table-workshort, .table-workshort td {
     font-size: 1.75rem;
     font-weight: bold;
 }
+
+.pagination {
+    margin: 18px 0;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-size: 1.2rem;
+}
+.pagination button {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: #C62828;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.13s;
+}
+.pagination button:disabled {
+    background: #bbb;
+    color: #eee;
+    cursor: default;
+}

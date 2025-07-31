@@ -9,5 +9,6 @@ public interface ICustomerService
     Task WithdrawBalance(int actingUserId, Customer customer, decimal amount);
     Task EditAsync(int actingUserId, Customer customer);
     Task<Customer> GetCustomer(int id);
-    Task<List<Customer>> GetCustomers();
+    Task<List<Customer>> GetCustomers(int page = 1, int pageSize = 20);
+    Task<int> GetCustomersCount();
 }

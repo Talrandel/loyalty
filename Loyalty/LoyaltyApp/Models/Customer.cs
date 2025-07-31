@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace LoyaltyApp.Models;
 
 public sealed class Customer
@@ -9,4 +11,7 @@ public sealed class Customer
     public string PhoneHashed { get; set; }
     public decimal Balance { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; }
 }
